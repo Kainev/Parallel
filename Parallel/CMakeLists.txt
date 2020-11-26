@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(
     source_list
-    "include/Parallel/Parallel.h"
+    "include/Parallel.h"
     "src/Parallel/Parallel.cpp"
 )
 

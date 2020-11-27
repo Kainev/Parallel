@@ -25,8 +25,9 @@ int main()
 {
 	Parallel::initialize();
 
-	const std::size_t task_count = 128;
+	const std::size_t task_count = 4096;
 	std::array<Parallel::TaskID, task_count> tasks;
+
 
 	for (int i = 0; i < task_count; i++)
 	{
@@ -34,10 +35,13 @@ int main()
 		Parallel::schedule(tasks[i]);
 	}
 
-	for (auto task : tasks)
-		Parallel::wait(task);
+
+	for (int i = 0; i < task_count; ++i)
+		Parallel::wait(tasks[i]);
+
 
 	Parallel::deinitialize();
+
 
 	return 0;
 }

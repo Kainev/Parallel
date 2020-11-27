@@ -41,13 +41,17 @@ namespace Parallel
 		for(std::uint32_t i = 0u; i < task_limit; i++)
 			g_task_pool[i] = std::make_unique<Parallel::Task>();
 
+
+		g_task_queues.reserve(std::thread::hardware_concurrency());
+		g_task_queues.emplace_back(std::make_unique<LockFreeDequeue<Task*>>());
+		g_worker_thread_count++;
 		g_running = true;
-		for (std::size_t i = 0; i < std::thread::hardware_concurrency() - 1u; i++)
+		for (std::size_t i = 1; i < std::thread::hardware_concurrency(); i++)
 		{
-			g_task_queues.emplace_back(std::make_unique<LockFreeDequeue<Task*>>(task_limit));
+			g_task_queues.emplace_back(std::make_unique<LockFreeDequeue<Task*>>());
 			g_thread_pool.emplace_back(thread_execution_loop, i);
 			g_worker_thread_count++;
-		}
+		}	
 	}
 
 	void Parallel::deinitialize()
@@ -65,6 +69,7 @@ namespace Parallel
 		TaskID task_id = next_task_id();
 		g_task_pool[task_id]->function = function;
 		g_task_pool[task_id]->remaining_tasks = 1;
+		g_task_pool[task_id]->task_id = task_id;
 		return task_id;
 	}
 
@@ -81,30 +86,36 @@ namespace Parallel
 
 		while(task->remaining_tasks > 0)
 		{ 
-			std::this_thread::sleep_for(1us); // TODO: Make the waiting thread also execute jobs here
 		}
 	}
 
 	void thread_execution_loop(std::uint32_t thread_index)
 	{
+		thread_local int no = 1;
 		while (g_running)
 		{
 			Task* task = get_task(thread_index);
-
-			if(thread_index == 0)
-				std::cout << "Working!" << std::endl;
 
 			if (task)
 			{
 				task->function();
 				task->remaining_tasks--;
+			    std::cout << thread_index << " Executed Task : " << task->task_id << "\n";
 			}
 		}
 	}
 
 	Task* get_task(std::uint32_t thread_index)
 	{
-		return g_task_queues[thread_index]->pop();
+		auto queue = g_task_queues[thread_index].get();
+
+		Task* task = g_task_queues[thread_index]->pop();
+		if (!task)
+		{
+			queue = g_task_queues[0].get();
+			task = queue->steal();
+		}
+		return task;
 	}
 
 	TaskID next_task_id()

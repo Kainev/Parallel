@@ -5,14 +5,16 @@
 namespace Parallel
 {
 	typedef void(*TaskFunction)();
+	typedef std::uint32_t TaskID;
 
 	struct alignas(std::hardware_destructive_interference_size) Task
 	{
 		TaskFunction function;
 		std::int32_t remaining_tasks;
+		TaskID task_id;
 	};
 
-	typedef std::uint32_t TaskID;
+	
 
 	void	initialize(std::uint32_t task_limit=8192);
 	void	deinitialize();

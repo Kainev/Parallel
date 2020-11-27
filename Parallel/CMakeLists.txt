@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(
     source_list
     "include/Parallel.h"
+    "include/Parallel/LockFreeDequeue.h"
     "src/Parallel/Parallel.cpp"
 )
 
